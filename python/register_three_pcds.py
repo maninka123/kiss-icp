@@ -164,11 +164,5 @@ def main(voxel_size: float = VOXEL_SIZE, visualize: bool = False) -> int:
 
 
 if __name__ == "__main__":
-    vox = VOXEL_SIZE
-    show = True
-    for arg in sys.argv[1:]:
-        if arg in ("--show", "--plot", "-v"):
-            show = True
-        else:
-            vox = float(arg)
-    raise SystemExit(main(vox, visualize=show))
+    # Run with default voxel size and always visualize when launched directly.
+    raise SystemExit(main(VOXEL_SIZE, visualize=True))
