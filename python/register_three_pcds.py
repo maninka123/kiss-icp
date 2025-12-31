@@ -72,6 +72,17 @@ def _transform_points(points: np.ndarray, T: np.ndarray) -> np.ndarray:
 
 
 def _visualize(clouds: List[np.ndarray], labels: List[str]) -> None:
+    # Avoid Dash/Jupyter integration issues when importing Open3D.
+    import os
+    import comm  # type: ignore
+
+    os.environ.setdefault("DASH_JUPYTER_MODE", "external")
+    os.environ.setdefault("DASH_IPYTHON_MODE", "external")
+    os.environ.setdefault("OPEN3D_USE_WEB_VISUALIZER", "0")
+    # Stub out comm.create_comm to bypass NotImplemented errors when Dash loads.
+    if getattr(comm, "create_comm", None):
+        comm.create_comm = lambda *args, **kwargs: None  # type: ignore
+
     try:
         import open3d as o3d
     except Exception as exc:  # noqa: BLE001
