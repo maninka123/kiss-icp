@@ -126,7 +126,7 @@ def main(voxel_size: float = DEFAULT_VOXEL_SIZE, visualize: bool = False) -> int
 
 if __name__ == "__main__":
     voxel = DEFAULT_VOXEL_SIZE
-    show = False
+    show = True
     for arg in sys.argv[1:]:
         if arg in ("--show", "--plot", "-v"):
             show = True
