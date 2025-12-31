@@ -20,6 +20,7 @@ MAX_DISTANCE = 100.0  # meters, map pruning distance
 MAX_POINTS_PER_VOXEL = 20
 MAX_ITERS = 20
 CONV_EPS = 1e-3
+MAX_PLOT_POINTS = 40000
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -63,7 +64,41 @@ def pretty_pose(label: str, T: np.ndarray) -> None:
         print(T)
 
 
-def main(voxel_size: float = VOXEL_SIZE) -> int:
+def _transform_points(points: np.ndarray, T: np.ndarray) -> np.ndarray:
+    """Apply homogeneous transform T to Nx3 points."""
+    R = T[:3, :3]
+    t = T[:3, 3]
+    return (R @ points.T).T + t
+
+
+def _visualize(clouds: List[np.ndarray], labels: List[str]) -> None:
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as exc:  # noqa: BLE001
+        print(f"matplotlib not available ({exc}); skipping visualization.")
+        return
+
+    def _sample(points: np.ndarray) -> np.ndarray:
+        if len(points) <= MAX_PLOT_POINTS:
+            return points
+        idx = np.random.choice(len(points), size=MAX_PLOT_POINTS, replace=False)
+        return points[idx]
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    colors = ["tab:blue", "tab:orange", "tab:green"]
+    for pts, lbl, col in zip(clouds, labels, colors):
+        pts_s = _sample(pts)
+        ax.scatter(pts_s[:, 0], pts_s[:, 1], pts_s[:, 2], s=0.2, c=col, label=lbl)
+    ax.set_xlabel("X [m]")
+    ax.set_ylabel("Y [m]")
+    ax.set_zlabel("Z [m]")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def main(voxel_size: float = VOXEL_SIZE, visualize: bool = False) -> int:
     pcd_paths = find_first_three_pcds()
     clouds = [load_xyz_from_pcd(p) for p in pcd_paths]
     for idx, (path, cloud) in enumerate(zip(pcd_paths, clouds), start=1):
@@ -108,9 +143,24 @@ def main(voxel_size: float = VOXEL_SIZE) -> int:
     pretty_pose("Cloud 1 (seed)", pose1)
     pretty_pose("Cloud 2 -> map", pose2)
     pretty_pose("Cloud 3 -> map", pose3)
+
+    if visualize:
+        cloud1_map = _transform_points(clouds[0], pose1)
+        cloud2_map = _transform_points(clouds[1], pose2)
+        cloud3_map = _transform_points(clouds[2], pose3)
+        _visualize(
+            [cloud1_map, cloud2_map, cloud3_map],
+            ["Cloud 1", "Cloud 2 aligned", "Cloud 3 aligned"],
+        )
     return 0
 
 
 if __name__ == "__main__":
-    vox = float(sys.argv[1]) if len(sys.argv) > 1 else VOXEL_SIZE
-    raise SystemExit(main(vox))
+    vox = VOXEL_SIZE
+    show = False
+    for arg in sys.argv[1:]:
+        if arg in ("--show", "--plot", "-v"):
+            show = True
+        else:
+            vox = float(arg)
+    raise SystemExit(main(vox, visualize=show))
