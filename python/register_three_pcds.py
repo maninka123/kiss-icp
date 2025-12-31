@@ -72,11 +72,20 @@ def _transform_points(points: np.ndarray, T: np.ndarray) -> np.ndarray:
 
 
 def _visualize(clouds: List[np.ndarray], labels: List[str]) -> None:
+    # Prefer interactive Open3D; fall back to matplotlib if missing.
+    try:
+        import open3d as o3d
+    except Exception as exc:  # noqa: BLE001
+        print(f"open3d not available ({exc}); falling back to matplotlib.")
+        o3d = None
+
     try:
         import matplotlib.pyplot as plt
     except Exception as exc:  # noqa: BLE001
-        print(f"matplotlib not available ({exc}); skipping visualization.")
-        return
+        plt = None
+        if o3d is None:
+            print(f"matplotlib not available ({exc}); skipping visualization.")
+            return
 
     def _sample(points: np.ndarray) -> np.ndarray:
         if len(points) <= MAX_PLOT_POINTS:
@@ -84,18 +93,33 @@ def _visualize(clouds: List[np.ndarray], labels: List[str]) -> None:
         idx = np.random.choice(len(points), size=MAX_PLOT_POINTS, replace=False)
         return points[idx]
 
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection="3d")
-    colors = ["tab:blue", "tab:orange", "tab:green"]
-    for pts, lbl, col in zip(clouds, labels, colors):
-        pts_s = _sample(pts)
-        ax.scatter(pts_s[:, 0], pts_s[:, 1], pts_s[:, 2], s=0.2, c=col, label=lbl)
-    ax.set_xlabel("X [m]")
-    ax.set_ylabel("Y [m]")
-    ax.set_zlabel("Z [m]")
-    ax.legend()
-    plt.tight_layout()
-    plt.show()
+    if o3d is not None:
+        colors = [(0.1, 0.4, 0.9), (0.9, 0.5, 0.1), (0.1, 0.7, 0.2)]
+        geometries = []
+        for pts, lbl, col in zip(clouds, labels, colors):
+            pts_s = _sample(pts)
+            pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pts_s))
+            pcd.paint_uniform_color(col)
+            pcd.transform(np.eye(4))  # no-op, but clarifies frame
+            pcd.pts_label = lbl  # for debugging
+            geometries.append(pcd)
+        print("Opening Open3D viewer with aligned clouds...")
+        o3d.visualization.draw_geometries(geometries, window_name="Aligned clouds")
+        return
+
+    if plt is not None:
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection="3d")
+        colors = ["tab:blue", "tab:orange", "tab:green"]
+        for pts, lbl, col in zip(clouds, labels, colors):
+            pts_s = _sample(pts)
+            ax.scatter(pts_s[:, 0], pts_s[:, 1], pts_s[:, 2], s=0.2, c=col, label=lbl)
+        ax.set_xlabel("X [m]")
+        ax.set_ylabel("Y [m]")
+        ax.set_zlabel("Z [m]")
+        ax.legend()
+        plt.tight_layout()
+        plt.show()
 
 
 def main(voxel_size: float = VOXEL_SIZE, visualize: bool = False) -> int:
@@ -157,7 +181,7 @@ def main(voxel_size: float = VOXEL_SIZE, visualize: bool = False) -> int:
 
 if __name__ == "__main__":
     vox = VOXEL_SIZE
-    show = False
+    show = True
     for arg in sys.argv[1:]:
         if arg in ("--show", "--plot", "-v"):
             show = True
