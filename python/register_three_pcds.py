@@ -101,7 +101,6 @@ def _visualize(clouds: List[np.ndarray], labels: List[str]) -> None:
         pts_s = _sample(pts)
         pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pts_s))
         pcd.paint_uniform_color(col)
-        pcd.pts_label = lbl  # for debugging
         geometries.append(pcd)
     print("Opening Open3D viewer with aligned clouds...")
     o3d.visualization.draw_geometries(geometries, window_name="Aligned clouds")
