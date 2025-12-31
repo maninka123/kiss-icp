@@ -6,8 +6,8 @@ _skbuild/
 .gitlab-ci-local/
 .polyscope.ini
 imgui.ini
-Datasets/
 .DS_Store
+Datasets/*.bag
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,c++
