@@ -8,6 +8,7 @@ _skbuild/
 imgui.ini
 .DS_Store
 Datasets/*.bag
+Datasets/Sample PCDs/
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,c++
